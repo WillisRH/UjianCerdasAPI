@@ -3,7 +3,7 @@ const bodyParser = require('body-parser'); // To parse JSON request body
 const { checkDB } = require('./utils/dbs');
 const { Exam } = require('./models/exam');
 require('dotenv').config();
-const { hashSync, genSaltSync } = require("bcrypt");
+const { hashSync, genSaltSync, compareSync } = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const { user } = require('./models/account');
 
@@ -12,6 +12,7 @@ const app = express();
 const port = 51000; // Change to your desired port number
 
 // Middleware to parse JSON request body
+app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
 checkDB();
@@ -31,6 +32,20 @@ app.post('/api/exams', async (req, res) => {
     const savedExam = await newExam.save();
 
     res.status(201).json(savedExam);
+  } catch (error) {
+    console.error('Error creating exam:', error);
+    res.status(500).json({ error: 'Failed to create exam' });
+  }
+});
+
+app.post('/api/exams/fetch', async (req, res) => {
+  try {
+    const { username, id, kodesoal } = req.body;
+
+
+    const exam = await Exam.find();
+
+    res.status(201).json(exam);
   } catch (error) {
     console.error('Error creating exam:', error);
     res.status(500).json({ error: 'Failed to create exam' });
@@ -143,7 +158,7 @@ app.post('/api/login', async (req, res) => {
     process.env.SECRET_TOKEN_KEY
   );
 
-  return res.status(200).json({ token });
+  return res.status(200).json({ token, id, email, username });
 })
 
 app.listen(port, () => {

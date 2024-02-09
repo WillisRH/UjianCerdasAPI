@@ -5,30 +5,37 @@ const QuizSchema = new mongoose.Schema({
       type: Number,
     },
     owner: {
-      type: String,
+      type: Number,
+    },
+    quizname: {
+        type: String
+    },
+    quizid: {
+        type: Number,
     },
     creator: {
-        type: String
+        type: Number
     },
     open: {
-        type: String
+        type: String,
+        default: null
     },
     close: {
-        type: String
+        type: String,
+        default: null
     },
     quiztime: {
-        type: String
+        type: String,
+        default: null
     },
     blocked: {
         type: Boolean,
         default: false
     },
-    reattemptquestion: [
+    reattemptquestionid: [
         [{ type: String }]
        ],
-     reattempteduser: [
-        [{type: String}]
-       ]
+     
 
 
 });

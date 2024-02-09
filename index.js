@@ -8,7 +8,7 @@ const jwt = require("jsonwebtoken");
 const { user } = require('./models/account');
 const { quiz } = require('./models/quiz');
 const { questions } = require('./models/questions');
-
+const cors = require('cors');
 
 const app = express();
 const port = 51000; // Change to your desired port number
@@ -16,45 +16,177 @@ const port = 51000; // Change to your desired port number
 // Middleware to parse JSON request body
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
+app.use(cors());
+const corsOptions = {
+    origin: 'http://localhost:15000', // Replace with the origin of your client application
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    credentials: true,
+    optionsSuccessStatus: 204,
+};
 
+app.use(cors(corsOptions));
 checkDB();
 
-app.post('/api/exams', async (req, res) => {
-  try {
-    const { question, choices, answer, questionid, isEssay } = req.body;
+// app.post('/api/exams', async (req, res) => {
+//   try {
+//     const { question, choices, answer, questionid, isEssay } = req.body;
 
-    const newExam = new Exam({
-      questionid,
-      question,
-      choices,
-      answer,
-      isEssay
+//     const newExam = new Exam({
+//       questionid,
+//       question,
+//       choices,
+//       answer,
+//       isEssay
+//     });
+
+//     const savedExam = await newExam.save();
+
+//     res.status(201).json(savedExam);
+//   } catch (error) {
+//     console.error('Error creating exam:', error);
+//     res.status(500).json({ error: 'Failed to create exam' });
+//   }
+// });
+
+
+app.post("/api/create/quiz", async (req, res) => {
+  try {
+    const {
+      mapelid,
+      quizname,
+      owner,
+      creator,
+      open,
+      close,
+      quiztime,
+      blocked,
+      reattemptquestionid,
+    } = req.body;
+
+    const newQuiz = new quiz({
+      mapelid,
+      quizname,
+      quizid: Math.floor(Math.random() * 99999),
+      owner,
+      creator,
+      open,
+      close,
+      quiztime,
+      blocked,
+      reattemptquestionid,
     });
 
-    const savedExam = await newExam.save();
+    await newQuiz.save();
 
-    res.status(201).json(savedExam);
+    res.status(201).json({ message: "Quiz created successfully", quiz: newQuiz });
   } catch (error) {
-    console.error('Error creating exam:', error);
-    res.status(500).json({ error: 'Failed to create exam' });
+    console.error(error);
+    res.status(500).json({ error: "Internal Server Error" });
   }
 });
 
-app.post('/api/exams/fetch', async (req, res) => {
+app.post("/api/create/question", async (req, res) => {
   try {
-    const { username, id, kodesoal } = req.body;
+      const {
+          mapelid,
+          quizid,
+          owner,
+          creator,
+          question,
+          questionmediabase64,
+          choise,
+          blocked,
+          hasmedia
+      } = req.body;
 
+      const newQuestion = new questions({
+          mapelid,
+          quizid,
+          owner,
+          creator,
+          question,
+          questionmediabase64,
+          choise,
+          blocked,
+          hasmedia
+      });
 
-    const exam = await Exam.find();
+      await newQuestion.save();
 
-    res.status(201).json(exam);
+      res.status(201).json({ message: "Question created successfully", question: newQuestion });
   } catch (error) {
-    console.error('Error creating exam:', error);
-    res.status(500).json({ error: 'Failed to create exam' });
+      console.error(error);
+      res.status(500).json({ error: "Internal Server Error" });
   }
 });
 
-app.post('/api/exams/fetch', async (req, res) => {
+
+app.post("/api/fetch/mapel", async (req, res) => {
+  try {
+    const { owner, idmapel } = req.body;
+
+    if (idmapel) {
+      // If idmapel exists, fetch details for the specific mapel
+      const mapelDetails = await mapel.findOne({ mapelid: idmapel }).populate("quiz");
+      res.status(200).json({ mapelDetails });
+      return;
+    }
+
+    // Assuming that "owner" is a Number in the MapelSchema
+    const mapels = await mapel.find({ owner }).populate("quiz");
+    res.status(200).json({ mapels });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+app.post("/api/fetch/quiz", async (req, res) => {
+  try {
+    const { owner, idmapel, idquiz } = req.body;
+
+    if (idmapel) {
+      // If idmapel exists, fetch details for the specific mapel
+      const quizDetails = await quiz.find({ mapelid: idmapel }).populate("quizname");
+      res.status(200).json({ quizDetails });
+      return;
+    }
+
+    if(idquiz) {
+      const quizDetails = await quiz.findOne({ quizid: idquiz }).populate("quizname");
+      res.status(200).json({ quizDetails });
+      return;
+    }
+
+    // Assuming that "owner" is a Number in the MapelSchema
+    const quizDetails = await quiz.find({ owner }).populate("quizname");
+    res.status(200).json({ quizDetails });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+
+
+
+app.post('/api/fetch/questions', async (req, res) => {
+  try {
+      // Extract parameters from the request body
+      const { quizid } = req.body;
+
+      // Fetch questions based on the provided quizid
+      const fetchedQuestions = await questions.find({ quizid });
+
+      // Send the fetched questions as the response
+      res.status(200).json({ questions: fetchedQuestions });
+  } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+app.post('/api/exam/fetch/questions', async (req, res) => {
   try {
     const { username, id, kodesoal } = req.body;
 
